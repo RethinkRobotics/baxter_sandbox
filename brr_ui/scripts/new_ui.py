@@ -77,8 +77,8 @@ class BrrUi():
 
         self.navigators = {'left': Navigator('left'), 'right': Navigator('right')}
 
-        self.navigators['left'].button0_changed.connect(self.ok_pressed)
-        self.navigators['right'].button0_changed.connect(self.ok_pressed)
+        self.navigators['left'].button0_changed.connect(self.left_ok_pressed)
+        self.navigators['right'].button0_changed.connect(self.right_ok_pressed)
 
         self.navigators['left'].wheel_changed.connect(self.left_wheel_moved)
         self.navigators['right'].wheel_changed.connect(self.right_wheel_moved)
@@ -183,8 +183,13 @@ class BrrUi():
     #     the currently selected example
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'''
 
+    def left_ok_pressed(self, v):
+        self.ok_pressed(v, 'left')
+
+    def right_ok_pressed(self, v):
+        self.ok_pressed(v, 'right')
     
-    def ok_pressed(self, v):
+    def ok_pressed(self, v, side):
         if v == True:
             context = self.btn_context[self.windows[self.active_window].selected_btn().name]
             func = self.btn_context[self.selected().name]['function']
@@ -193,7 +198,7 @@ class BrrUi():
             self.active_window = context['nextWindow']
             self.draw()
             if func and func != "Back":
-                globals()[func]()
+                globals()[func](side)
 
     def back(self, v):
         if v == True:
@@ -227,11 +232,11 @@ class BrrUi():
         if v==1:
             self.status.enable()
 
-def cam_right():
+def cam_right(side):
     camera_disp('right_hand')
-def cam_left():
+def cam_left(side):
     camera_disp('left_hand')
-def cam_head():
+def cam_head(side):
     camera_disp('head')
 def camera_disp(side):
     def _display(camera, name):
@@ -255,10 +260,6 @@ def camera_disp(side):
 def springs(side):
     proc = ros_process('rosrun baxter_examples joint_torque_springs.py -l %s' % side)
 
-def puppet_left():
-    puppet('left')
-def puppet_right():
-    puppet('right')
 def puppet(side):
     proc = ros_process('rosrun baxter_examples joint_velocity_puppet.py -l %s' % side)
 
@@ -266,16 +267,14 @@ def wobbler(side):
     proc = ros_process('rosrun baxter_examples joint_velocity_wobbler.py')
     proc.process.stdin.close()
 
-def record():
+def record(side):
     proc = ros_process('rosrun baxter_examples joint_recorder.py -f recording')
     ui.windows['record_submenu'].buttons[2].selectable=True
 
-def play():
+def play(side):
     proc1 = ros_process('rosrun baxter_interface joint_trajectory_action_server.py &')
     rospy.sleep(1)
     proc2 = ros_process('rosrun baxter_examples joint_trajectory_file_playback.py -f recording -l 0')
-
-
 
 if __name__=='__main__':
     rospy.init_node('launch_ui')

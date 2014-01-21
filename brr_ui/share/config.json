@@ -16,13 +16,13 @@
             "name": "puppet",
             "size": [267, 221],
             "offset": [80, 150],
-            "function": null,
+            "function": "puppet",
             "image_prefix": "ArmPuppet",
             "inner": false,
             "window": "demo_1",
             "selectable": true,
             "index": 0,
-            "nextWindow": "puppet_submenu"
+            "nextWindow": "run_puppet"
         },
         {
             "name": "rec_option",
@@ -35,31 +35,6 @@
             "selectable": true,
             "index": 2,
             "nextWindow": "record_submenu"
-        },
-        {
-            "name": "puppet_left",
-            "size": [232, 191],
-            "offset": [250, 30],
-            "function": "puppet_left",
-            "image_prefix": "Camera_LeftCamera",
-            "inner": true,
-            "window": "puppet_submenu",
-            "selectable": true,
-            "index": 1,
-            "nextWindow": "run_puppet"
-        },
-        {
-            "name": "puppet_right",
-            "size": [232, 191],
-            "offset": [550, 30],
-            "function": "puppet_right",
-            "label": "Right Arm",
-            "image_prefix": "Camera_RightCamera",
-            "inner": true,
-            "window": "puppet_submenu",
-            "selectable": true,
-            "index": 2,
-            "nextWindow": "run_puppet"
         },
         {
             "name": "cam_left",
@@ -141,18 +116,6 @@
             "back": false
         },
         {
-            "name": "puppet_submenu",
-            "bg": "Panels_SubMenu",
-            "offset": [40, 350],
-            "parent": "demo_1",
-            "no_scroll": false,
-            "default": "puppet_left",
-            "back": {
-                "offset": [25, 30],
-                "size": [112, 114]
-            }
-        },
-        {
             "name": "cam_submenu",
             "bg": "Panels_SubMenu",
             "offset": [40, 350],
@@ -216,7 +179,7 @@
             "name": "run_puppet",
             "bg": "BRR_Inner",
             "offset": [0, 0],
-            "parent": "puppet_submenu",
+            "parent": "demo_1",
             "no_scroll": true,
             "default": "run_puppet_back",
             "back": {
