@@ -157,13 +157,14 @@ class BrrUi():
 
     def scroll(self, direction):
         print '--@scroll():  direction=%s' % direction
-        self.inc_scroll(direction)
-        while True:
-            if self.selected().selectable == False:
-                self.inc_scroll(direction)
-            else:
-                break
-        self.draw()
+        if not self.windows[self.active_window].no_scroll:
+            self.inc_scroll(direction)
+            while True:
+                if self.selected().selectable == False:
+                    self.inc_scroll(direction)
+                else:
+                    break
+            self.draw()
 
     def inc_scroll(self, inc):
         win_name = self.active_window
@@ -171,14 +172,10 @@ class BrrUi():
         btn_index = win.selected_btn_index
         print "--@inc_scroll: btn_index = %s" % btn_index
         if inc==1:
-            if btn_index == len(win.buttons)-1:
-                self.windows[win_name].selected_btn_index = 0
-            else:
+            if btn_index < len(win.buttons)-1:
                 self.windows[win_name].selected_btn_index += 1
         else:
-            if self.windows[win_name].selected_btn_index == 0:
-                self.windows[win_name].selected_btn_index = len(win.buttons)-1
-            else:
+            if btn_index > 0:
                 self.windows[win_name].selected_btn_index -= 1
 
     '''~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -314,7 +311,6 @@ if __name__=='__main__':
     ui = BrrUi(windows, btn_context)
 
     ui.draw()
-    '''
     time.sleep(.5)
     ui.scroll(1)
     time.sleep(.5)
@@ -323,7 +319,6 @@ if __name__=='__main__':
     ui.scroll(1)
     time.sleep(.5)
     #ui.ok_pressed(True)
-    '''
     '''
     ui.press('left')
     time.sleep(1)

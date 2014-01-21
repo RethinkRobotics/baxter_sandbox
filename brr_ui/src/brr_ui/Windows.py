@@ -13,6 +13,7 @@ class BrrWindow():
         self.bg['normal'] = Image.open('%s/share/Panels/%s.png' % (pack_path, window['bg']))
         self.bg['offset'] = (window['offset'][0], window['offset'][1])
         self.bg['size'] = self.bg['normal'].size
+        self.no_scroll = window['no_scroll'] 
         if window['bg'] == 'Panels_Main':
             self.bg['disabled'] = Image.open('%s/share/Panels/%s_DarkBkg.png' % (pack_path, window['bg']))
         else:
