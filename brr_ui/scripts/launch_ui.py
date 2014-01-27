@@ -38,7 +38,7 @@ import time
 import copy
 import json
 
-from baxter_interface import Navigator, RobotEnable, CameraController
+from baxter_interface import Navigator, RobotEnable, CameraController, Gripper
 from brr_ui import (
     mk_process,
     rostopic_handler,
@@ -50,7 +50,10 @@ from brr_ui import (
     msg_to_cv,
     overlay,
     BrrButton,
-    BrrWindow
+    BrrWindow,
+    exit_with_return_code,
+    kill_python_procs,
+    python_proc_ids,
 )
 from sensor_msgs.msg import Image as ImageMsg
 from baxter_core_msgs.srv import ListCameras
@@ -100,6 +103,29 @@ class BrrUi():
                         'head': CameraController('head_camera')}
         self.cam_sub = ''
 
+        self.l_grip = {'interface': Gripper('left'), 'type': 'custom'}
+        self.r_grip = {'interface': Gripper('right'), 'type': 'custom'}
+        rospy.Timer(rospy.Duration(.5), self.update_grippers)
+    
+        self.enable()
+        mk_process('rosrun baxter_tools tuck_arms.py -u')
+
+    def enable_cuff(self):
+        if len(python_proc_ids('gripper_cuff_control')) == 0:
+            ros_process('rosrun baxter_examples gripper_cuff_control.py')
+
+    def update_grippers(self, event):
+        new_l = self.l_grip['interface'].type()
+        new_r = self.r_grip['interface'].type()
+        if new_l != self.l_grip['type']:
+            self.l_grip['type'] = new_l
+            if new_l == 'electric':
+                self.l_grip['interface'].calibrate()
+        if new_r != self.r_grip['type']:
+            self.r_grip['type'] = new_r
+            if new_r == 'electric':
+                self.r_grip['interface'].calibrate()
+        self.enable_cuff()
 
     def selected(self):
         return self.windows[self.active_window].selected_btn()
@@ -159,10 +185,14 @@ class BrrUi():
         print '--@scroll():  direction=%s' % direction
         if not self.windows[self.active_window].no_scroll:
             self.inc_scroll(direction)
+            i=0
             while True:
+                i+=1
                 if self.selected().selectable == False:
                     self.inc_scroll(direction)
                 else:
+                    break
+                if i > len(self.windows[self.active_window].buttons):
                     break
             self.draw()
 
@@ -213,24 +243,35 @@ class BrrUi():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'''
 
     def kill_examples(self, v=1):
+        print '--@kill_examples'
         self.active_example = False
         self.selected().status = 'selected'
         commands = ['joint_torque', 'wobbler', 'puppet', 'joint', 'baxter_interface', 'baxter_examples']
-        procs = []
-        all_procs = [p for p in mk_process('ps ax', get_output=True, quiet=True).split('\n') if 'python' in p]
         for cmd in commands:
-            procs += [int(p.split()[0]) for p in all_procs if cmd in p]
-        for proc in procs:
-            os.kill(proc, SIGINT)
+            kill_python_procs(cmd)
         for camera in self.cameras:
             self.cameras[camera].close()
         if self.cam_sub != '':
             self.cam_sub.unregister()
         self.draw()
+        self.enable()
+    
 
     def enable(self, v=1):
         if v==1:
-            self.status.enable()
+            try:
+                self.status.enable()
+            except:
+                self.error_screen('stopped')
+                return false
+            if not self.status.state().enabled:
+                self.error_screen('no_enable')
+        self.enable_cuff()
+
+    def error_screen(self, error):
+        self.windows[error].parent = self.active_window
+        self.active_window = error
+        self.draw()
 
 def cam_right(side):
     camera_disp('right_hand')
@@ -251,8 +292,7 @@ def camera_disp(side):
     ui.cam_sub = rospy.Subscriber(
         'cameras/%s_camera/image' % side,
         ImageMsg,
-        _cam_to_screen
-    )
+        _cam_to_screen)
 
     camera = ui.cameras[side] 
     _display(camera, '%s_camera' % side)
@@ -276,8 +316,39 @@ def play(side):
     rospy.sleep(1)
     proc2 = ros_process('rosrun baxter_examples joint_trajectory_file_playback.py -f recording -l 0')
 
+def calib(stage=0):
+    print stage
+    if stage==0 or stage == 1:
+        run_calibs(stage)
+    else:
+        mk_process('rm -rf /var/tmp/hlr/calib.txt')
+
+def run_calibs(stage):
+    f = open('/var/tmp/hlr/calib.txt', 'w')
+    f.write('stage %s' % (stage+1))
+    for side in ['left', 'right']:
+        if run_calib(routine, side)==0:
+            ui.error_screen('calib_error')
+            return 0
+    exit_with_return_code('EXIT_REBOOT')
+
+def run_calib(stage, side):
+    if stage == 0:
+        return mk_process('rosrun baxter_tools calibrate_arm.py -l %s' % side)
+    elif stage == 1:
+        return mk_process('rosrun baxter_tools tare.py -l %s' % side)
+    
+def check_calib():
+    try:
+        f=open('/var/tmp/hlr/calib.txt', 'r')
+        print "?"
+        stage = f.read()
+        calib(int(stage.split()[1]))
+    except IOError:
+        pass
+
 if __name__=='__main__':
-    rospy.init_node('launch_ui')
+    rospy.init_node('rsdk_demo')
     rp = rospkg.RosPack()
     pack_path = rp.get_path('brr_ui') + '/share'
     
@@ -308,17 +379,13 @@ if __name__=='__main__':
         windows[window['name']] = BrrWindow(window, buttons)
 
     ui = BrrUi(windows, btn_context)
-
-    ui.draw()
-    time.sleep(.5)
-    ui.scroll(1)
-    time.sleep(.5)
-    ui.scroll(1)
-    time.sleep(.5)
-    ui.scroll(1)
-    time.sleep(.5)
-    #ui.ok_pressed(True)
     '''
+    ui.draw()
+    check_calib()
+    time.sleep(.5)
+    ui.ok_pressed(True, 'left')
+    time.sleep(.5)
+    ui.ok_pressed(True, 'left')
     ui.press('left')
     time.sleep(1)
     ui.press('left')

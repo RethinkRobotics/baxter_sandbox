@@ -107,6 +107,16 @@ class ros_process():
         else:
             return self.process.returncode
 
+def python_processes():
+    return [p for p in mk_process('ps ax', get_output=True, quiet=True).split('\n') if 'python' in p]
+
+def python_proc_ids(proc):
+    return [int(p.split()[0]) for p in python_processes() if proc in p]
+
+def kill_python_procs(proc):
+    for idx in python_proc_ids(proc):
+        os.kill(idx, signal.SIGINT)
+
 ## Example program showing how to use the timeout decorator
 @timeout(3, "You didn't type anything")
 def do_stuff():
