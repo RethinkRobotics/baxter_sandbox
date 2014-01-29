@@ -20,7 +20,7 @@ import PIL
 #       onto the UI display
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'''
 
-def gen_msg(image):
+def gen_cv(image):
     img = rgb_to_bgr(image)
     return PIL_to_cv(img)
 
@@ -40,7 +40,7 @@ def msg_to_cv(img):
     return cv_bridge.CvBridge().imgmsg_to_cv(img, desired_encoding='bgr8')
 
 def overlay(old_img, new_img, original_size, new_rect):
-    tmp = cv.CreateImage((original_size), cv.IPL_DEPTH_8U, 3)
+    tmp = cv.CreateImage(original_size, cv.IPL_DEPTH_8U, 3)
     cv.Copy(old_img, tmp)
     sub = cv.GetSubRect(tmp, new_rect)
     cv_img = msg_to_cv(new_img)

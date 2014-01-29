@@ -3,7 +3,7 @@ from distutils.core import setup
 from catkin_pkg.python_setup import generate_distutils_setup
 
 d = generate_distutils_setup()
-d['packages'] = ['brr_ui']
+d['packages'] = ['baxter_demo_ui']
 d['package_dir'] = {'': 'src'}
 
 setup(**d)

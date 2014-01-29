@@ -50,7 +50,7 @@ def mk_process(command, quiet=False, get_output=False, shell=True):
 
 # Pretty much the same as mk_process, but in a class so that
 #   the user can call the access the process after instantiation
-class ros_process():
+class RosProcess():
     def __init__(self, command, quiet=True, get_output=False, shell=True):
         if shell == True:
             self.process = Popen(command, shell=True, stdout=None, 
