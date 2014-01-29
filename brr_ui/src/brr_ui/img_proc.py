@@ -1,7 +1,6 @@
 import cv
 import cv_bridge
-from PIL import Image, ImageDraw, ImageFont, ImageOps
-
+import PIL
 
 '''~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PIL/cv interaction
@@ -27,7 +26,7 @@ def gen_msg(image):
 
 def rgb_to_bgr(image):
     r, g, b = image.split()
-    return Image.merge('RGB', (b, g, r))
+    return PIL.Image.merge('RGB', (b, g, r))
 
 def PIL_to_cv(img):
     ci = cv.CreateImage((1024, 600), cv.IPL_DEPTH_8U, 3)

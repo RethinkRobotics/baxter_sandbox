@@ -11,7 +11,6 @@ find_package(catkin
   baxter_interface
 )
 
-
 catkin_python_setup()
 
 catkin_package(

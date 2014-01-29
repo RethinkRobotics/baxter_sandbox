@@ -1,18 +1,6 @@
 {
     "Buttons": [
         {
-            "name": "camera",
-            "size": [267, 221],
-            "offset": [380, 150],
-            "function": null,
-            "image_prefix": "Camera",
-            "inner": false,
-            "window": "demo_1",
-            "selectable": true,
-            "nextWindow": "cam_submenu",
-            "index": 1
-        },
-        {
             "name": "puppet",
             "size": [267, 221],
             "offset": [80, 150],
@@ -25,6 +13,18 @@
             "nextWindow": "run_puppet"
         },
         {
+            "name": "camera",
+            "size": [267, 221],
+            "offset": [380, 150],
+            "function": null,
+            "image_prefix": "Camera",
+            "inner": false,
+            "window": "demo_1",
+            "selectable": true,
+            "nextWindow": "cam_submenu",
+            "index": 1
+        },
+        {
             "name": "rec_option",
             "size": [267, 221],
             "offset": [680, 150],
@@ -35,6 +35,18 @@
             "selectable": true,
             "index": 2,
             "nextWindow": "record_submenu"
+        },
+        {
+            "name": "more_options",
+            "size": [72, 67],
+            "offset": [950, 20],
+            "function": null,
+            "image_prefix": "MoreOptions",
+            "inner": false,
+            "window": "demo_1",
+            "selectable": true,
+            "index": 3,
+            "nextWindow": "more_options_menu"
         },
         {
             "name": "cam_left",
@@ -100,6 +112,45 @@
             "selectable": false,
             "index": 2,
             "nextWindow": "run_playback"
+        },
+        {
+            "name": "shutdown",
+            "size": [354, 91],
+            "offset": [380, 150],
+            "function": "shutdown",
+            "label": "Shutdown",
+            "image_prefix": "MoreOptions_Shutdown",
+            "inner": true,
+            "window": "more_options_menu",
+            "selectable": true,
+            "index": 1,
+            "nextWindow": "demo_1"
+        },
+        {
+            "name": "reboot",
+            "size": [354, 91],
+            "offset": [380, 270],
+            "function": "reboot",
+            "label": "Reboot",
+            "image_prefix": "MoreOptions_Reboot",
+            "inner": true,
+            "window": "more_options_menu",
+            "selectable": true,
+            "index": 2,
+            "nextWindow": "demo_1"
+        },
+        {
+            "name": "tare",
+            "size": [354, 91],
+            "offset": [380, 390],
+            "function": "tare",
+            "label": "Tare/Calibrate",
+            "image_prefix": "MoreOptions_Tare",
+            "inner": true,
+            "window": "more_options_menu",
+            "selectable": true,
+            "index": 3,
+            "nextWindow": "demo_1"
         }
     ],
     "Back": {
@@ -182,6 +233,18 @@
             "parent": "demo_1",
             "no_scroll": true,
             "default": "run_puppet_back",
+            "back": {
+                "offset": [25, 130],
+                "size": [112, 114]
+            }
+        },
+        {
+            "name": "more_options_menu",
+            "bg": "Panels_MoreOptions",
+            "offset": [0, 0],
+            "parent": "demo_1",
+            "no_scroll": false,
+            "default": "more_options_menu_back",
             "back": {
                 "offset": [25, 130],
                 "size": [112, 114]

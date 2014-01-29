@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2013, Rethink Robotics
+# Copyright (c) 2014, Rethink Robotics
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,78 +27,84 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import copy
+import json
+import os
+import PIL
+from signal import SIGINT
+
 import cv
 import cv_bridge
 import rospy
 import rospkg
-import os
-from PIL import Image, ImageDraw, ImageFont, ImageOps
-from signal import SIGINT
-import time
-import copy
-import json
 
 from baxter_interface import Navigator, RobotEnable, CameraController, Gripper
 from brr_ui import (
-    mk_process,
-    rostopic_handler,
-    ros_process,
-    gen_msg,
-    rgb_to_bgr,
-    PIL_to_cv,
-    cv_to_msg,
-    msg_to_cv,
-    overlay,
     BrrButton,
     BrrWindow,
+    cv_to_msg,
     exit_with_return_code,
+    gen_msg,
     kill_python_procs,
+    mk_process,
+    msg_to_cv,
+    overlay,
+    PIL_to_cv,
     python_proc_ids,
+    rgb_to_bgr,
+    ros_process,
 )
-from sensor_msgs.msg import Image as ImageMsg
+from sensor_msgs.msg import Image
 from baxter_core_msgs.srv import ListCameras
 
-class BrrUi():
+
+class BrrUi(object):
     def __init__(self, windows, btn_context):
-        self.topic = rostopic_handler('/robot/xdisplay', latch=True)
+        self.xdisp = rospy.Publisher('/robot/xdisplay', Image, latch=True)
         self.status = RobotEnable()
-        self._rp = rospkg.RosPack()
-        self.font = ImageFont.truetype(self._rp.get_path('brr_ui') + '/share/FreeSerif.ttf', 25)
+        self.rp = rospkg.RosPack()
+        self.font = PIL.ImageFont.truetype(
+                self.rp.get_path('brr_ui') +
+                '/share/FreeSerif.ttf', 25
+        )
         self.windows = windows
         self.btn_context = btn_context
 
         self.textHeight = self.font.getsize('W')[1]
-        self.img = Image.new('RGB', (1024, 600), 'white')
-        
-        self.frames = {}
+        self.img = PIL.Image.new('RGB', (1024, 600), 'white')
 
+        self.frames = {}
         self.selected_btn_index = 0
         self.active_window = 'demo_1'
         self.active_example = False
-        self.current_frame=None
-        
+        self.current_frame = None
 
-        self.navigators = {'left': Navigator('left'), 'right': Navigator('right')}
 
+        self.navigators = {'left': Navigator('left'), 
+                           'right': Navigator('right')}
+
+        # Navigator OK Button
         self.navigators['left'].button0_changed.connect(self.left_ok_pressed)
         self.navigators['right'].button0_changed.connect(self.right_ok_pressed)
 
+        # Navigator Wheel
         self.navigators['left'].wheel_changed.connect(self.left_wheel_moved)
         self.navigators['right'].wheel_changed.connect(self.right_wheel_moved)
 
+        # Navigator Baxter Button
         self.navigators['left'].button2_changed.connect(self.enable)
         self.navigators['right'].button2_changed.connect(self.enable)
 
+        # Navigator Back Button
         self.navigators['left'].button1_changed.connect(self.back)
         self.navigators['right'].button1_changed.connect(self.back)
 
-
         self.recent_wheel = False
         self.wheel_time = 0
-        self.wheel_states = {'left': self.navigators['left'].wheel, 
+        self.wheel_states = {'left': self.navigators['left'].wheel,
                              'right': self.navigators['right'].wheel}
-        
-        self.cameras = {'left_hand': CameraController('left_hand_camera'), 
+
+        self.cameras = {'left_hand': CameraController('left_hand_camera'),
                         'right_hand': CameraController('right_hand_camera'),
                         'head': CameraController('head_camera')}
         self.cam_sub = ''
@@ -106,7 +112,7 @@ class BrrUi():
         self.l_grip = {'interface': Gripper('left'), 'type': 'custom'}
         self.r_grip = {'interface': Gripper('right'), 'type': 'custom'}
         rospy.Timer(rospy.Duration(.5), self.update_grippers)
-    
+
         self.enable()
         mk_process('rosrun baxter_tools tuck_arms.py -u')
 
@@ -132,27 +138,27 @@ class BrrUi():
 
     '''~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Main Draw function.
-    # Converts the appropriate frame to a ros message and sends 
+    # Converts the appropriate frame to a ros message and sends
     #     it to the screen.
-    # Also sets the current_frame parameter, in expectation of 
+    # Also sets the current_frame parameter, in expectation of
     #     future hooks to merge images into the current view
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'''
 
     def draw(self):
-        img = Image.new('RGB', (1024, 600), 'white')
-        d = ImageDraw.Draw(img)
-        print self.active_window
-        img = gen_msg(self.draw_window(img, d, self.active_window))
+        img = PIL.Image.new('RGB', (1024, 600), 'white')
+        print '--@UI.draw():  window = %s' % self.active_window 
+        img = gen_msg(self.draw_window(img, self.active_window))
         self.img = img
         msg = cv_to_msg(img)
-        self.topic.pub(msg)
+        self.xdisp.publish(msg)
         rospy.sleep(.1)
 
-    def draw_window(self, img, draw, window, selected=True):
+    def draw_window(self, img, window, selected=True):
         if self.windows[window].parent:
-            print '--@draw_window: drawing parent: %s' % self.windows[window].parent
-            img = self.draw_window(img, draw, window=self.windows[window].parent, selected=False)
-        return self.windows[window].draw(img, draw, selected)
+            img = self.draw_window(img,
+                                   window=self.windows[window].parent, 
+                                   selected=False)
+        return self.windows[window].draw(img, selected)
 
     '''~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Functions linking wheel turns with scrolling in the UI
@@ -165,51 +171,35 @@ class BrrUi():
         self.wheel_moved(v, 'right')
 
     def wheel_moved(self, v, side):
-        print '--@wheel_moved():  v=%s    side=%s   last=%s ok=%s' % (v, side, self.wheel_states[side], self.wheel_ok())
-        print 'active?: %s' % self.active_example
         if not self.active_example and self.wheel_ok():
-            print "?"
             wheel = self.wheel_states[side]
-            if v > wheel and v-wheel < 100:
+            if v > wheel and v - wheel < 100:
                 self.scroll(1)
             else:
                 self.scroll(-1)
-            self.wheel_states[side] = v 
+            self.wheel_states[side] = v
             self.recent_wheel = True
-            self.wheel_time = time.time()
+            self.wheel_time = rospy.get_time()
 
     def wheel_ok(self):
-        return (self.recent_wheel==False or time.time()-self.wheel_time > .01)
+        return (self.recent_wheel == False or 
+                rospy.get_time() - self.wheel_time > .01)
 
     def scroll(self, direction):
         print '--@scroll():  direction=%s' % direction
         if not self.windows[self.active_window].no_scroll:
-            self.inc_scroll(direction)
-            i=0
-            while True:
-                i+=1
-                if self.selected().selectable == False:
-                    self.inc_scroll(direction)
-                else:
+            win = self.windows[self.active_window]
+            i = win.selected_btn_index + direction
+            while (i >= 0 and i < len(win.buttons)):
+                if win.buttons[i].selectable:
+                    self.windows[self.active_window].selected_btn_index = i
                     break
-                if i > len(self.windows[self.active_window].buttons):
-                    break
+                i += direction
             self.draw()
 
-    def inc_scroll(self, inc):
-        win_name = self.active_window
-        win = self.windows[self.active_window]
-        btn_index = win.selected_btn_index
-        print "--@inc_scroll: btn_index = %s" % btn_index
-        if inc==1:
-            if btn_index < len(win.buttons)-1:
-                self.windows[win_name].selected_btn_index += 1
-        else:
-            if btn_index > 0:
-                self.windows[win_name].selected_btn_index -= 1
 
     '''~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Functions linking pressing the OK button on either arm with 
+    # Functions linking pressing the OK button on either arm with
     #     the currently selected example
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'''
 
@@ -218,12 +208,12 @@ class BrrUi():
 
     def right_ok_pressed(self, v):
         self.ok_pressed(v, 'right')
-    
+
     def ok_pressed(self, v, side):
         if v == True:
-            context = self.btn_context[self.windows[self.active_window].selected_btn().name]
+            context = self.btn_context[self.selected().name]
             func = self.btn_context[self.selected().name]['function']
-            if func=="Back":
+            if func == "Back":
                 self.kill_examples()
             self.active_window = context['nextWindow']
             self.draw()
@@ -246,7 +236,9 @@ class BrrUi():
         print '--@kill_examples'
         self.active_example = False
         self.selected().status = 'selected'
-        commands = ['joint_torque', 'wobbler', 'puppet', 'joint', 'baxter_interface', 'baxter_examples']
+        commands = ['joint_torque', 'wobbler', 
+                    'puppet', 'joint', 
+                    'baxter_interface', 'baxter_examples']
         for cmd in commands:
             kill_python_procs(cmd)
         for camera in self.cameras:
@@ -255,15 +247,14 @@ class BrrUi():
             self.cam_sub.unregister()
         self.draw()
         self.enable()
-    
 
     def enable(self, v=1):
-        if v==1:
+        if v == 1:
             try:
                 self.status.enable()
             except:
                 self.error_screen('stopped')
-                return false
+                return False
             if not self.status.state().enabled:
                 self.error_screen('no_enable')
         self.enable_cuff()
@@ -273,12 +264,16 @@ class BrrUi():
         self.active_window = error
         self.draw()
 
+
 def cam_right(side):
     camera_disp('right_hand')
+
 def cam_left(side):
     camera_disp('left_hand')
+
 def cam_head(side):
     camera_disp('head')
+
 def camera_disp(side):
     def _display(camera, name):
         camera.close()
@@ -287,47 +282,62 @@ def camera_disp(side):
 
     def _cam_to_screen(msg):
         newMsg = overlay(ui.img, msg, (1024, 600), (205, 140, 640, 400))
-        ui.topic.pub(newMsg)
-        
+        ui.xdisp.publish(newMsg)
+
     ui.cam_sub = rospy.Subscriber(
         'cameras/%s_camera/image' % side,
-        ImageMsg,
+        Image,
         _cam_to_screen)
 
-    camera = ui.cameras[side] 
+    camera = ui.cameras[side]
     _display(camera, '%s_camera' % side)
 
 def springs(side):
-    proc = ros_process('rosrun baxter_examples joint_torque_springs.py -l %s' % side)
+    proc = ros_process('rosrun baxter_examples '
+                       'joint_torque_springs.py -l %s' % side)
 
 def puppet(side):
-    proc = ros_process('rosrun baxter_examples joint_velocity_puppet.py -l %s' % side)
+    proc = ros_process('rosrun baxter_examples '
+                       'joint_velocity_puppet.py -l %s' % side)
 
 def wobbler(side):
-    proc = ros_process('rosrun baxter_examples joint_velocity_wobbler.py')
+    proc = ros_process('rosrun baxter_examples '
+                       'joint_velocity_wobbler.py')
     proc.process.stdin.close()
 
 def record(side):
-    proc = ros_process('rosrun baxter_examples joint_recorder.py -f recording')
-    ui.windows['record_submenu'].buttons[2].selectable=True
+    proc = ros_process('rosrun baxter_examples' 
+                       'joint_recorder.py -f recording')
+    ui.windows['record_submenu'].buttons[2].selectable = True
 
 def play(side):
-    proc1 = ros_process('rosrun baxter_interface joint_trajectory_action_server.py &')
+    proc1 = ros_process('rosrun baxter_interface '
+                        'joint_trajectory_action_server.py &')
     rospy.sleep(1)
-    proc2 = ros_process('rosrun baxter_examples joint_trajectory_file_playback.py -f recording -l 0')
+    proc2 = ros_process('rosrun baxter_examples' 
+                        'joint_trajectory_file_playback.py -f recording -l 0')
+
+def tare(side):
+    calib()
+
+def reboot(side):
+    exit_with_return_code('EXIT_REBOOT')
+
+def shutdown(side):
+    exit_with_return_code('EXIT_SHUTDOWN')
 
 def calib(stage=0):
     print stage
-    if stage==0 or stage == 1:
+    if stage == 0 or stage == 1:
         run_calibs(stage)
     else:
         mk_process('rm -rf /var/tmp/hlr/calib.txt')
 
 def run_calibs(stage):
     f = open('/var/tmp/hlr/calib.txt', 'w')
-    f.write('stage %s' % (stage+1))
+    f.write('stage %s' % (stage + 1))
     for side in ['left', 'right']:
-        if run_calib(routine, side)==0:
+        if run_calib(stage, side) == 0:
             ui.error_screen('calib_error')
             return 0
     exit_with_return_code('EXIT_REBOOT')
@@ -337,25 +347,24 @@ def run_calib(stage, side):
         return mk_process('rosrun baxter_tools calibrate_arm.py -l %s' % side)
     elif stage == 1:
         return mk_process('rosrun baxter_tools tare.py -l %s' % side)
-    
+
 def check_calib():
     try:
-        f=open('/var/tmp/hlr/calib.txt', 'r')
-        print "?"
+        f = open('/var/tmp/hlr/calib.txt', 'r')
         stage = f.read()
         calib(int(stage.split()[1]))
     except IOError:
         pass
 
-if __name__=='__main__':
-    rospy.init_node('rsdk_demo')
+def main():
+    rospy.init_node('rsdk_demo_ui')
     rp = rospkg.RosPack()
     pack_path = rp.get_path('brr_ui') + '/share'
-    
+
     f = open('%s/config.json' % pack_path).read()
     conf_data = json.loads(f)
 
-         
+
     buttons = {}
     windows = {}
     btn_context = {}
@@ -367,36 +376,30 @@ if __name__=='__main__':
             if window['parent']:
                 img_pref = 'Back'
                 inner = True
-            else: 
+            else:
                 img_pref = 'MainBack'
                 inner = False
-            buttons[name] = BrrButton(name, size, offset, 0, img_pref, inner, window['name'], '', True)
-            btn_context[name] = {'nextWindow': window['parent'], 'function': 'Back'}
+            buttons[name] = BrrButton(name, size, offset, 0,
+                                      img_pref, inner,
+                                      window['name'], '', True)
+            btn_context[name] = {'nextWindow': window['parent'],
+                                 'function': 'Back'}
     for btn in conf_data['Buttons']:
-        buttons[btn['name']] = BrrButton(btn['name'], btn['size'], btn['offset'], btn['index'], btn['image_prefix'], btn['inner'], btn['window'], '', btn['selectable'])
-        btn_context[btn['name']] = {'nextWindow': btn['nextWindow'], 'function': btn['function']}
+        buttons[btn['name']] = BrrButton(btn['name'], btn['size'],
+                                         btn['offset'], btn['index'],
+                                         btn['image_prefix'], btn['inner'],
+                                         btn['window'], '', btn['selectable'])
+        btn_context[btn['name']] = {'nextWindow': btn['nextWindow'],
+                                    'function': btn['function']}
     for window in conf_data['Windows']:
         windows[window['name']] = BrrWindow(window, buttons)
 
     ui = BrrUi(windows, btn_context)
-    '''
     ui.draw()
     check_calib()
-    time.sleep(.5)
-    ui.ok_pressed(True, 'left')
-    time.sleep(.5)
-    ui.ok_pressed(True, 'left')
-    ui.press('left')
-    time.sleep(1)
-    ui.press('left')
-    time.sleep(1)
-    ui.scroll(1)
-    time.sleep(1)
-    ui.press('left')
-    time.sleep(1)
-    ui.press('left')
-    time.sleep(1)
-    '''
 
     while not rospy.is_shutdown():
         rospy.spin()
+
+if __name__ == '__main__':
+    main()
