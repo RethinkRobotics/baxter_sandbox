@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(brr_ui)
+project(baxter_demo_ui)
 
 find_package(catkin
   REQUIRED

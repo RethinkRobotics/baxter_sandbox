@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 <package>
-  <name>brr_ui</name>
+  <name>baxter_demo_ui</name>
   <version>0.7.0</version>
   <description>
-    Brr User Interface
+    Simple UI for the Baxter Research Robot, demonstrating some of the
+    interfaces and examples in the external SDK.
   </description>
 
   <maintainer email="rsdk.support@rethinkrobotics.com">
