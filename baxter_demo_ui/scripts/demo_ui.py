@@ -314,10 +314,10 @@ def tare(ui, side):
     calib()
 
 def reboot(ui, side):
-    exit_with_return_code('EXIT_REBOOT')
+    mk_process('shutdown -r now')
 
 def shutdown(ui, side):
-    exit_with_return_code('EXIT_SHUTDOWN')
+    mk_process('shutdown -h now')
 
 def calib(ui, stage=0):
     print stage
