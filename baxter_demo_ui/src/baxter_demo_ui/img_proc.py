@@ -51,13 +51,12 @@ import PIL
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'''
 
 
-def gen_cv(image):
-    img = rgb_to_bgr(image)
-    return PIL_to_cv(img)
+def gen_cv(img):
+   return PIL_to_cv(rgb_to_bgr(img))
 
 
-def rgb_to_bgr(image):
-    r, g, b = image.split()
+def rgb_to_bgr(img):
+    r, g, b = ima.split()
     return PIL.Image.merge('RGB', (b, g, r))
 
 

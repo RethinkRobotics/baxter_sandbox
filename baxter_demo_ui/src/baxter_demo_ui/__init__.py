@@ -1,6 +1,6 @@
-from demo_buttons import BrrButton
-from demo_windows import BrrWindow
-from img_proc import (
+from .demo_buttons import BrrButton
+from .demo_windows import BrrWindow
+from .img_proc import (
     gen_cv,
     rgb_to_bgr,
     PIL_to_cv,
@@ -8,7 +8,7 @@ from img_proc import (
     msg_to_cv,
     overlay,
 )
-from baxter_procs import (
+from .baxter_procs import (
     kill_python_procs,
     mk_process,
     python_processes,

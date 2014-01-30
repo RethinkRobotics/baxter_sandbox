@@ -30,7 +30,38 @@
 from PIL import Image, ImageDraw, ImageFont
 import rospkg
 
-
+'''~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Button UI class for Baxter Research Robot Demo Mode
+# This class defines and controls the dislpay of a single button
+#   within the context of the UI.
+#
+# Initialization arguments:
+#     name - The configured name for this button
+#     size - The size (in pixels) of this button's images
+#     offset - The x,y location in pixels of the top-right of this button
+#     index - The index of the button within its Window's context
+#             This is only used for the window generation.  The button
+#               never does anything with this information.
+#     image_prefix - Filename prefix for image assets
+#     inner - Refers to types of button assets.  Inner buttons only have
+#               2 distinct images, while non-inner buttons have 4
+#     label - The configured label for the button
+#     selectable - Bool: should the user be able to scroll to this button?
+#     share_path - path to this package's share/ folder
+#
+# Public Parameters:
+#     name - the configured name for this button
+#     index - the size (in pixels) of this button's images
+#     selectable - Bool: should the user be able to scroll to this button
+#
+# Public Methods:
+#     get_image(self, state) - Returns a resized, antialiased version of the
+#                                image for a given state of this button
+#     draw_label(self, draw) - Use the passed draw item to add label text
+#                                to the button image.
+#     draw(self, img, draw, state) - Draws the image at the correct size
+#                                      and offset onto the passed img.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'''
 class BrrButton(object):
     def __init__(self, name, size, offset,
                  index, image_prefix, inner,

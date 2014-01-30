@@ -31,7 +31,36 @@ from copy import copy
 from PIL import Image, ImageDraw, ImageFont
 import rospkg
 
-
+'''~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Window UI class for Baxter Research Robot Demo Mode
+# This class defines a single window within the context of the UI,
+#   and contains a list of all buttons associated with that window.
+#
+# Initialization arguments:
+#     window_data - Json configuration information for the window
+#     buttons - A list of all buttons associated with this window
+#     share_path - path to this package's share/ folder
+#
+# Public Parameters:
+#     name - The name of this window as defined in the config
+#     parent - The name of the window that this is a sub-window of
+#                (or False)
+#
+# Public Methods:
+#     draw(self, img, selected) - Paste's the display of this window onto
+#                                   the passed img.
+#                                 selected refers whether or not
+#                                   this is the active window.
+#     selected_btn(self) - Returns the BrrButton element representing
+#                            the currently selected button in this
+#                            window.
+#     set_btn_selectable(self, index, sel) - Sets the selectable parameter
+#                                              of the button at the given
+#                                              index to <sel>
+#     scroll(self, direction) - Sets the selected button to the next button
+#                                 in this window in the given direction
+#                                 that is selectable.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'''
 class BrrWindow(object):
     def __init__(self, window_data, buttons, share_path):
         self.name = window_data['name']
@@ -56,19 +85,17 @@ class BrrWindow(object):
                                                    window_data['bg']))
         else:
             self._bg['disabled'] = self._bg['normal']
-        self._buttons = {}
+        self._buttons = dict()
         for name, btn in buttons.items():
             self._buttons[btn.index] = btn
-        print buttons
-        print self.parent, len(self._buttons), self.name
         if self.parent and len(self._buttons) > 1:
             self._selected_btn_index = 1
         else:
             self._selected_btn_index = 0
 
-        self._states = {}
-        self._states['normal'] = {}
-        self._states['disabled'] = {}
+        self._states = dict()
+        self._states['normal'] = dict()
+        self._states['disabled'] = dict()
         for id in self._buttons:
             name = self._buttons[id].name
             self._states['normal'][name] = self._gen_img(name, disabled=False)
@@ -83,7 +110,6 @@ class BrrWindow(object):
         return img
 
     def selected_btn(self):
-        print self.parent
         return self._buttons[self._selected_btn_index]
 
     def set_btn_selectable(self, index, sel):
