@@ -28,7 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from copy import copy
-from PIL import Image, ImageDraw, ImageFont
+
+from PIL import (
+  Image,
+  ImageDraw,
+  ImageFont
+)
 import rospkg
 
 '''~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
