@@ -107,21 +107,23 @@ class PickPlace(object):
         pose_req = PoseStamped(header=hdr, pose=goal_pose)
         ikreq.pose_stamp.append(pose_req)
         resp = self._iksvc(ikreq)
+        print resp.result_type[0]
         return dict(zip(resp.joints[0].name, resp.joints[0].position))
 
-    def _find_approach(self, pose, offset):
+    def _find_approach(self, pose, offset, offset_x=0.0):
         ikreq = SolvePositionIKRequest()
         # Add 5 cm offset in Z direction
         try:
-            pose['position'] = Point(x=pose['position'][0],
+            pose['position'] = Point(x=pose['position'][0] + offset_x,
                                      y=pose['position'][1],
                                      z=pose['position'][2] + offset
                                      )
         except Exception:
-            pose['position'] = Point(x=pose['position'].x,
+            pose['position'] = Point(x=pose['position'].x + offset_x,
                                      y=pose['position'].y,
                                      z=pose['position'].z + offset
                                      )
+            print "exceptional!"
         approach_pose = Pose()
         approach_pose.position = pose['position']
         approach_pose.orientation = pose['orientation']
@@ -130,6 +132,7 @@ class PickPlace(object):
         pose_req = PoseStamped(header=hdr, pose=approach_pose)
         ikreq.pose_stamp.append(pose_req)
         resp = self._iksvc(ikreq)
+        print resp.result_type[0]
         return dict(zip(resp.joints[0].name, resp.joints[0].position))
 
     def _pick(self, value):
@@ -223,12 +226,14 @@ class PickPlace(object):
                 if self._side == 'right':
                     self.neutral_jp = self._find_approach(
                                           deepcopy(move_pose['seven']),
-                                          0.1
+                                          0.1, -0.1
                                       )
+                    print "calculating right neutral:"
+                    print self.neutral_jp
                 else:
                     self.neutral_jp = self._find_approach(
                                           deepcopy(move_pose['one']),
-                                          0.1
+                                          0.1, -0.1
                                       )
                 filename = self._path + self._side + '_poses.config'
                 self._save_file(filename)
@@ -306,9 +311,11 @@ class PickPlace(object):
                 good_input = True
 
     def move_neutral(self):
+        print "moving neutral"
         self._limb.set_joint_position_speed(0.8)
         self._limb.move_to_joint_positions(self.neutral_jp,
                                            threshold=0.08727)  # 5 degrees
+        print "done moving neutral"
 
     def get_piece(self):
         self._limb.set_joint_position_speed(0.8)

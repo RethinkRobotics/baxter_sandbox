@@ -218,7 +218,7 @@ class ConnectFour(object):
 
     def user_move(self):
         cnt = 0
-        while True:
+        while True and not rospy.is_shutdown():
             if (self._user_pieces == self._user_cnt and
                 self._total_pieces == self._round + 1 and
                 self._baxter_pieces == self._baxter_cnt):
