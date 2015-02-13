@@ -62,6 +62,12 @@ class ConnectFourVision(object):
         self._side = limb
         self._camera_name = self._side + "_hand_camera"
         print ("Opening " + self._camera_name + "...")
+        try:
+            self._head_camera = baxter_interface.CameraController("head_camera")
+            print ("Attempting to turn off the head camera...")
+            self._head_camera.close()
+        except Exception:
+            pass
         self._camera = baxter_interface.CameraController(self._camera_name)
         self._camera.open()
         self._camera.resolution = [1280, 800]
@@ -121,7 +127,7 @@ class ConnectFourVision(object):
         board_state_topic = '/vision/connect_four_state'
         self._board_state_pub = rospy.Publisher(
             board_state_topic,
-            String)
+            String, queue_size=10)
 
         print 'All set! Starting to process images!'
         self._process_images()
@@ -137,7 +143,7 @@ class ConnectFourVision(object):
         cv2.polylines(local_image, np.int32([np.array(self._roi_points)]),
                       1, (0, 255, 0), 2)
 
-        cv.ShowImage("Connect Four RGB", cv.fromarray(local_image))
+        cv2.imshow("Connect Four RGB", local_image)
 
         cv.SetMouseCallback("Connect Four RGB", self._on_mouse_click, 0)
         cv.CreateTrackbar("Gain", "Connect Four RGB", self._gain_slider,
@@ -225,7 +231,7 @@ class ConnectFourVision(object):
                      (0, 255, 0), 1)
             cv2.line(self._image_grid, (42 * 6, 0), (42 * 6, 300),
                      (0, 255, 0), 1)
-            cv.ShowImage('Board State', cv.fromarray(self._image_grid))
+            cv2.imshow('Board State', self._image_grid)
 
     def _project_roi(self):
         warped_in = np.float32([np.array(self._roi_points)])
@@ -242,8 +248,7 @@ class ConnectFourVision(object):
         lower_yellow = np.array([20, 60, 60])
         upper_yellow = np.array([45, 255, 255])
         self._yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
-        cv.ShowImage('Yellow', cv.fromarray(self._yellow))
-        #cv.ShowImage('HUE', cv.fromarray(cv2.split(hsv)[0]))
+        cv2.imshow('Yellow', self._yellow)
 
     def _filter_red(self):
         # Finds red colors in HSV space
@@ -251,7 +256,7 @@ class ConnectFourVision(object):
         lower_red = np.array([165, 60, 60])
         upper_red = np.array([180, 255, 255])
         self._red = cv2.inRange(hsv, lower_red, upper_red)
-        cv.ShowImage('Red', cv.fromarray(self._red))
+        cv2.imshow('Red', self._red)
 
     def _pub_state(self):
         state = dict()
@@ -267,7 +272,8 @@ class ConnectFourVision(object):
 
     def _on_camera(self, data):
         try:
-            self.cv_image = self._bridge.imgmsg_to_cv(data, "bgr8")
+            self.cv_image = self._bridge.imgmsg_to_cv2(data,
+                                                       desired_encoding="bgr8")
             local_image = np.asarray(self.cv_image)
         except Exception:
             print 'OH NO - IMAGE WENT WRONG!!'
@@ -289,7 +295,8 @@ class ConnectFourVision(object):
 
     def _on_mouse_click(self, event, x, y, flags, param):
         if event == cv.CV_EVENT_LBUTTONDOWN:
-            width, height = cv.GetSize(self.cv_image)
+            width = self.cv_image.shape[0]
+            height = self.cv_image.shape[1]
             for idx, points in enumerate(self._roi_points):
                 if (x <= points[0] + 5 and x >= points[0] - 5
                     and y <= points[1] + 5 and y >= points[1] - 5):

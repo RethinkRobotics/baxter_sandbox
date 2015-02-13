@@ -375,12 +375,13 @@ class PickPlace(object):
             head.command_nod()
             self._gripper.command_position(100.0, block=True)
             self._gripper.command_position(0.0, block=True)
-        img = cv.LoadImage(self._images + '/baxterwins.png')
-        msg = cv_bridge.CvBridge().cv_to_imgmsg(img)
-        pub = rospy.Publisher('/robot/xdisplay', Image, latch=True)
+        img = cv2.imread(self._images + '/baxterwins.png')
+        msg = cv_bridge.CvBridge().cv2_to_imgmsg(img)
+        pub = rospy.Publisher('/robot/xdisplay', Image,
+                              latch=True, queue_size=10)
         pub.publish(msg)
         rospy.sleep(5.0)
-        img = cv.LoadImage(self._images + '/default.png')
+        img = cv2.imread(self._images + '/default.png')
         msg = cv_bridge.CvBridge().cv_to_imgmsg(img)
         pub.publish(msg)
 
@@ -392,13 +393,14 @@ class PickPlace(object):
         head.set_pan(1.0, 5.0)
         head.set_pan(-1.0, 5.0)
         head.set_pan(0.0, 5.0)
-        img = cv.LoadImage(self._images + '/congrats.png')
-        msg = cv_bridge.CvBridge().cv_to_imgmsg(img)
-        pub = rospy.Publisher('/robot/xdisplay', Image, latch=True)
+        img = cv2.imread(self._images + '/congrats.png')
+        msg = cv_bridge.CvBridge().cv2_to_imgmsg(img)
+        pub = rospy.Publisher('/robot/xdisplay', Image,
+                              latch=True, queue_size=10)
         pub.publish(msg)
         rospy.sleep(5.0)
-        img = cv.LoadImage(self._images + '/default.png')
-        msg = cv_bridge.CvBridge().cv_to_imgmsg(img)
+        img = cv2.imread(self._images + '/default.png')
+        msg = cv_bridge.CvBridge().cv2_to_imgmsg(img)
         pub.publish(msg)
 
     def tie(self):
@@ -409,13 +411,14 @@ class PickPlace(object):
         head.set_pan(1.0, 5.0)
         head.set_pan(-1.0, 5.0)
         head.set_pan(0.0, 5.0)
-        img = cv.LoadImage(self._images + '/tie.png')
-        msg = cv_bridge.CvBridge().cv_to_imgmsg(img)
-        pub = rospy.Publisher('/robot/xdisplay', Image, latch=True)
+        img = cv2.imread(self._images + '/tie.png')
+        msg = cv_bridge.CvBridge().cv2_to_imgmsg(img)
+        pub = rospy.Publisher('/robot/xdisplay', Image,
+                              latch=True, queue_size=10)
         pub.publish(msg)
         rospy.sleep(5.0)
-        img = cv.LoadImage(self._images + '/default.png')
-        msg = cv_bridge.CvBridge().cv_to_imgmsg(img)
+        img = cv2.imread(self._images + '/default.png')
+        msg = cv_bridge.CvBridge().cv2_to_imgmsg(img)
         pub.publish(msg)
 
 
