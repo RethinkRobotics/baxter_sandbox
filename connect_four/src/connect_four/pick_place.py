@@ -34,7 +34,7 @@ from copy import deepcopy
 import rospy
 
 import tf
-import cv
+import cv2
 import cv_bridge
 import rospkg
 import tf
