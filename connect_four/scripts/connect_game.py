@@ -119,12 +119,17 @@ class ConnectFour(object):
         print ("Ready to get beat %s?" % self.user)
         good_input = False
         while not good_input:
-            self._depth = int(raw_input("Please enter difficulty "
-                                                     "level (1-4): "))
-            if self._depth < 1 or self._depth > 4:
-                print "Invalid difficulty provided"
+            self._depth = raw_input("Please enter difficulty "
+                                    "level (1-4): ")
+            try:
+                self._depth = int(self._depth)
+            except ValueError:
+                print "Invalid difficulty character provided"
             else:
-                good_input = True
+                if self._depth < 1 or self._depth > 4:
+                    print "Invalid difficulty provided"
+                else:
+                    good_input = True
         good_input = False
         while not good_input:
             self._turn = str(raw_input("Please enter who will go first "
@@ -218,7 +223,7 @@ class ConnectFour(object):
 
     def user_move(self):
         cnt = 0
-        while True:
+        while not rospy.is_shutdown():
             if (self._user_pieces == self._user_cnt and
                 self._total_pieces == self._round + 1 and
                 self._baxter_pieces == self._baxter_cnt):
